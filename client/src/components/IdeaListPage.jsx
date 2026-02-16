@@ -1,24 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 
-const initialForm = {
-  title: '',
-  description: '',
-};
+const initialForm = { title: '', description: '' };
 
-export default function IdeaListPage() {
+export default function IdeaListPage({ user, onUserChange }) {
   const [ideas, setIdeas] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const [error, setError] = useState('');
   const [seedStatus, setSeedStatus] = useState('');
   const navigate = useNavigate();
 
+  const stats = useMemo(() => {
+    const total = ideas.length;
+    const revisions = ideas.reduce((acc, idea) => acc + Number(idea.revision_count || 0), 0);
+    return { total, revisions };
+  }, [ideas]);
+
   async function loadIdeas() {
     setLoading(true);
+    setError('');
     try {
       const data = await api.getIdeas();
       setIdeas(data);
@@ -36,18 +41,17 @@ export default function IdeaListPage() {
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
-
     if (!form.title.trim() || !form.description.trim()) {
-      setError('Both title and description are required.');
+      setError('Başlık ve açıklama zorunludur.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const idea = await api.createIdea(form);
+      const created = await api.createIdea(form);
       setForm(initialForm);
       await loadIdeas();
-      navigate(`/ideas/${idea.id}`);
+      navigate(`/ideas/${created.id}`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -56,9 +60,9 @@ export default function IdeaListPage() {
   }
 
   async function onSeedDemo() {
-    setSeeding(true);
-    setSeedStatus('Creating demo...');
     setError('');
+    setSeeding(true);
+    setSeedStatus('Demo oluşturuluyor...');
     try {
       const result = await api.seedDemo();
       setSeedStatus(result.message);
@@ -71,54 +75,83 @@ export default function IdeaListPage() {
     }
   }
 
+  async function onUpgrade() {
+    setUpgrading(true);
+    setError('');
+    try {
+      const result = await api.upgrade();
+      onUserChange(result.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUpgrading(false);
+    }
+  }
+
+  async function onLogout() {
+    try {
+      await api.logout();
+    } catch {
+      // ignore server logout failure
+    }
+    api.setToken('');
+    onUserChange(null);
+  }
+
   return (
-    <div className="page">
-      <header>
-        <h1>Idea Evolution Tracker</h1>
-        <p>Track how your ideas change over time with branching revisions.</p>
+    <div className="page modern-bg">
+      <header className="topbar glass-card">
+        <div>
+          <h1>✨ Idea Evolution Tracker</h1>
+          <p>{user.name} olarak giriş yapıldı • Plan: <strong>{user.plan.toUpperCase()}</strong></p>
+        </div>
+        <div className="topbar-actions">
+          {user.plan !== 'premium' ? (
+            <button type="button" onClick={onUpgrade} disabled={upgrading} className="premium-btn">
+              {upgrading ? 'Yükseltiliyor...' : 'Premiuma Geç'}
+            </button>
+          ) : <span className="premium-badge">PREMIUM</span>}
+          <button type="button" onClick={onLogout} className="secondary-btn">Çıkış</button>
+        </div>
       </header>
 
-      <section className="card">
-        <h2>Create Idea</h2>
+      <section className="kpi-grid">
+        <article className="glass-card kpi"><h3>Toplam Fikir</h3><p>{stats.total}</p></article>
+        <article className="glass-card kpi"><h3>Toplam Revizyon</h3><p>{stats.revisions}</p></article>
+        <article className="glass-card kpi"><h3>Durum</h3><p>{user.plan === 'premium' ? 'Insights açık' : 'Premium kilitli'}</p></article>
+      </section>
+
+      <section className="card modern-card">
+        <h2>Yeni Fikir Oluştur</h2>
         <form onSubmit={onSubmit} className="form-grid">
           <label>
-            Title
-            <input
-              value={form.title}
-              onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-              placeholder="Ex: Collaborative travel planner"
-            />
+            Başlık
+            <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="Örn: Yapay zekalı eğitim asistanı" />
           </label>
           <label>
-            Description
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              rows={3}
-              placeholder="Short description of the core idea"
-            />
+            Kısa Açıklama
+            <textarea rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Problemi ve çözümü kısa anlat" />
           </label>
-          <button type="submit" disabled={submitting}>
-            {submitting ? 'Creating...' : 'Create Idea'}
-          </button>
+          <button type="submit" disabled={submitting}>{submitting ? 'Kaydediliyor...' : 'Fikri Başlat'}</button>
         </form>
       </section>
 
-      <section className="card">
+      <section className="card modern-card">
         <div className="row-between">
-          <h2>Ideas</h2>
-          <button onClick={onSeedDemo} type="button" disabled={seeding}>
-            {seeding ? 'Seeding...' : 'Seed Demo Idea'}
+          <h2>Fikir Portföyü</h2>
+          <button type="button" onClick={onSeedDemo} disabled={seeding} className="secondary-btn">
+            {seeding ? 'Seeding...' : 'Demo Yükle'}
           </button>
         </div>
         {seedStatus ? <p className="info">{seedStatus}</p> : null}
-        {loading ? <p>Loading ideas...</p> : null}
-        {ideas.length === 0 && !loading ? <p>No ideas yet.</p> : null}
-        <ul className="idea-list">
+        {loading ? <p>Yükleniyor...</p> : null}
+        {ideas.length === 0 && !loading ? <p>Henüz fikir yok.</p> : null}
+        <ul className="idea-list modern-list">
           {ideas.map((idea) => (
             <li key={idea.id}>
               <Link to={`/ideas/${idea.id}`}>{idea.title}</Link>
               <p>{idea.description}</p>
+              <small>{idea.revision_count || 0} revizyon</small>
             </li>
           ))}
         </ul>

@@ -1,89 +1,96 @@
 # Idea Evolution Tracker
 
-A full-stack MVP web app to create ideas, add revisions (including branches), and visualize the full revision tree.
+Modern full-stack product MVP: fikir oluştur, revizyonları dallandır, görsel akışta yönet, kullanıcı hesabınla takip et, premium özelliklerle gelişimi hızlandır.
+
+## ✨ Neler Var?
+- Kullanıcı kaydı / giriş / çıkış
+- Free & Premium plan modeli
+- Fikir oluşturma ve listeleme (kullanıcıya özel)
+- Revizyon ekleme (branching için parentRevision destekli)
+- React Flow ile interaktif evrim ağacı
+- Node tıklayınca detay paneli
+- Demo seed: 8 revizyon + çoklu branch
+- Premium features:
+  - Innovation insights (branch/momentum/impact özetleri)
+  - JSON export
+  - Deney notu + etki skoru ile akıllı değerlendirme
 
 ## Tech Stack
-- **Frontend:** React + Vite
-- **Visualization:** React Flow
-- **Backend:** Node.js + Express
-- **Database:** SQLite (file-based)
+- Frontend: React + Vite
+- Visualization: React Flow
+- Backend: Node.js + Express
+- DB: SQLite (`server/data.sqlite`)
 
-## Project Structure
-
+## Proje Yapısı
 ```text
 .
 ├── client
 │   ├── src
-│   ├── package.json
-│   └── ...
+│   │   ├── components
+│   │   ├── api.js
+│   │   └── ...
+│   └── package.json
 ├── server
-│   ├── index.js
 │   ├── db.js
-│   ├── data.sqlite (auto-created)
+│   ├── index.js
 │   └── package.json
 └── README.md
 ```
 
-## Install
-
-### 1) Install server dependencies
+## Kurulum
 ```bash
 cd server
 npm install
-```
-
-### 2) Install client dependencies
-```bash
 cd ../client
 npm install
 ```
 
-## Run
-
-### Start backend server
+## Çalıştırma
+Backend:
 ```bash
 cd server
 npm run start
 ```
-Server runs on `http://localhost:4000`.
 
-### Start frontend client
+Frontend:
 ```bash
 cd client
 npm run dev
 ```
-Client runs on `http://localhost:5173`.
 
-## API Endpoints
-- `GET /api/health`
+- API: `http://localhost:4000`
+- UI: `http://localhost:5173`
+
+## API (özet)
+### Auth
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `POST /api/auth/upgrade`
+
+### Ideas / Revisions
 - `POST /api/ideas`
 - `GET /api/ideas`
 - `GET /api/ideas/:id`
 - `POST /api/ideas/:id/revisions`
 - `GET /api/ideas/:id/revisions`
-- `POST /api/demo-seed` (bonus demo utility)
+- `POST /api/demo-seed`
 
-## Usage Flow
-1. Open the app.
-2. Create a new idea (title + short description).
-3. Open idea details.
-4. Add revisions, optionally selecting a parent revision to branch.
-5. Click nodes in the React Flow graph to view revision details.
-6. Use **Seed Demo Idea** to generate a sample idea with 8 revisions and multiple branches.
+### Premium
+- `GET /api/ideas/:id/insights`
+- `GET /api/ideas/:id/export`
+
+### Health
+- `GET /api/health`
 
 ## Screenshots
-- `docs/screenshots/ideas-list.png` *(placeholder)*
-- `docs/screenshots/idea-detail-tree.png` *(placeholder)*
+- `docs/screenshots/dashboard-modern.png` *(placeholder)*
+- `docs/screenshots/idea-workspace-premium.png` *(placeholder)*
 
 ## Roadmap
-- Revision editing/deleting
-- Authentication + multi-user support
-- Diff view between revisions
-- Search/filter in large trees
-- Export tree as image/JSON
-- Auto-layout improvements (Dagre/ELK)
-
-## Notes for production rollout
-- SQLite DB file is `server/data.sqlite`; back it up before deployments.
-- CORS is enabled for cross-origin local development.
-- API returns JSON errors with clear messages and validates path/body inputs.
+- Gerçek ödeme entegrasyonu (Stripe)
+- Takım/organizasyon workspace
+- Gerçek AI öneri motoru
+- Gelişmiş layout engine (ELK/Dagre)
+- Collaboration + canlı çoklu kullanıcı düzenleme
